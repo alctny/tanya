@@ -1,8 +1,6 @@
 package plug
 
 import (
-	"ecila/util"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -10,35 +8,60 @@ import (
 )
 
 const (
-	URL_GODEV = `https://go.dev/dl/`
-
-	OS_GODEV_MACOS   = `macOS`
-	OS_GODEV_Linux   = `Linux`
-	OS_GODEV_WINDOWS = `Windows`
-	OS_GODEV_FREEBSD = `FreeBSD`
-
-	ARCH_GODEV_X86     = `x86`
-	ARCH_GODEV_X8664   = `x86-64`
-	ARCH_GODEV_ARM64   = "ARM64"
-	ARCH_GODEV_PPC64LE = "ppc64le"
-	ARCH_GODEV_S390X   = "s390x"
-
-	KIND_GODEV_INSTALER = "Installer"
-	KIND_GODEV_ARCHIVE  = "Archive"
-	KIND_GODEV_SOURCE   = "Source"
-
-	COLUMN_FILENAME_GODEV = 1
-	COLUMN_KIND_GODEV     = 2
-	COLUMN_OS_GODEV       = 3
-	COLUMN_ARCH_GODEV     = 4
-	COLUMN_SIZE_GODEV     = 5
-	COLUMN_SHA_GODEV      = 6
-
+	URL = `https://go.dev/dl/`
 	// BASEURL_GODEV = "dl.google.com/go/go1.19.5.darwin-arm64.tar.gz"
 )
 
-func DownloadGolangSDK(os string, arch string, kind string) error {
-	resp, err := http.Get(URL_GODEV)
+const (
+	X86     = "x86"
+	X8664   = "x86-64"
+	ARM64   = "ARM64"
+	PPC64LE = "ppc64le"
+	S390X   = "s390x"
+)
+
+const (
+	MACOS   = "macOS"
+	Linux   = "Linux"
+	WINDOWS = "Windows"
+	FREEBSD = "FreeBSD"
+)
+
+const (
+	FILENAME = 1
+	KIND     = 2
+	OS       = 3
+	ARCH     = 4
+	SIZE     = 5
+	SHA      = 6
+)
+
+const (
+	INSTALER_GO = "Installer"
+	ARCHIVE_GO  = "Archive"
+	SOURCE_GO   = "Source"
+)
+
+type golangPlug struct {
+	Config
+	Link string
+	File string
+	Sha  string
+}
+
+var GoPlug = &golangPlug{}
+
+func InitGolangPlug(arch ArchType, os OSType, bit Bit, kind FileType) {
+	GoPlug.Config = Config{
+		Arch: arch,
+		OS:   os,
+		Bit:  bit,
+		Kind: kind,
+	}
+}
+
+func (g *golangPlug) Parse() error {
+	resp, err := http.Get(URL)
 	if err != nil {
 		return err
 	}
@@ -52,32 +75,26 @@ func DownloadGolangSDK(os string, arch string, kind string) error {
 		if len(row) != 8 {
 			return
 		}
-		if strings.TrimSpace(row[COLUMN_KIND_GODEV]) != kind ||
-			strings.TrimSpace(row[COLUMN_OS_GODEV]) != os ||
-			strings.TrimSpace(row[COLUMN_ARCH_GODEV]) != arch {
+		kind := strings.TrimSpace(row[KIND])
+		os := strings.TrimSpace(row[OS])
+		arch := strings.TrimSpace(row[ARCH])
+		if kind != string(g.Kind) || os != string(g.OS) || arch != string(g.Arch) {
 			return
 		}
-		// url, ok := s.Find("a").Attr("href")
-		// if ok {
-		filename := strings.TrimSpace(row[COLUMN_FILENAME_GODEV])
-		err = util.Download(fmt.Sprintf("https://dl.google.com/go/%s", filename), filename)
-		if err != nil {
-			panic(err)
+		link, exist := s.Find(".download").Attr("href")
+		if !exist {
+			panic("parse error")
 		}
-		safe, err := util.Hash64Sum(filename, strings.TrimSpace(row[COLUMN_SHA_GODEV]))
-		if err != nil {
-			panic(err)
-		}
-		if !safe {
-			// TODO: 主动删除
-			panic("the sha256 check not ok, please delete it")
-		}
-		// }
+		GoPlug.File = row[FILENAME]
+		GoPlug.Sha = row[SHA]
+		GoPlug.Link = link
 	})
 
 	return nil
 }
 
-func InstallGolangSDK() {
+// TODO
+// Install install go sdk to local
+func (g *golangPlug) Install() {
 
 }

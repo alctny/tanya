@@ -1,10 +1,21 @@
 package main
 
-import "ecila/plug"
+import (
+	"github.com/lwifew/aded/plug"
+)
 
 func main() {
-	err := plug.DownloadGolangSDK(plug.OS_GODEV_MACOS, plug.ARCH_GODEV_X8664, plug.KIND_GODEV_ARCHIVE)
+	plug.InitGolangPlug(
+		plug.ARM64,
+		plug.MACOS,
+		plug.BIT_64,
+		plug.ARCHIVE_GO,
+	)
+	err := plug.GoPlug.Parse()
 	if err != nil {
 		panic(err)
 	}
+
+	// https://code.visualstudio.com/sha/download?build=stable&os=linux-x64
+	// alice's development envrioument downloader
 }
